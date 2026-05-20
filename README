@@ -1,0 +1,47 @@
+# Frequency Response Averager
+
+The reason I designed this application was to experiment with averaging algorithms on headphone frequency responses. It was prompted by the fact that averaging two files with the same shape but with peaks and dips shifted relative (as we often see with reseated measurements of the same headphone), instead of finding the median peaks and dips the average would instead be a smoothed version of the two. What I aimed for was an interpolation of the two shapes like when you blend two vector paths in a drawing program. Soft-DTW turns out to be the best algorithm for this, but the other algorithms  interesting as well. It's worth experimenting!
+
+## Getting Started
+
+### Prerequisites
+- Python 3.8+
+- pip
+
+### Installation
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running the App
+Launch the application from the project root:
+```bash
+python main.py
+```
+
+## Averaging Algorithms
+
+### Arithmetic Mean 
+The simplest method; serves as the reference. The arithmetic mean calculates the average at each strict frequency bin (Euclidean averaging). If you have two frequency responses with a resonance peak that is slightly misaligned (e.g., one at 1000 Hz, one at 1050 Hz), the arithmetic mean won't combine them into a single central peak. Instead, it widens the peak, lowers its amplitude, and often creates "wiggles" or double-peaks.
+
+### Geometric Arc-Length: 
+It's super fast! The Geometric Arc-Length Blend treats frequency response curves as continuous spatial paths rather than collections of independent frequency bins. It normalizes each response by its cumulative curve trajectory (path length), averages those paths geometrically in a parametric coordinate space, and maps the result back onto a rigid frequency grid.
+
+With the introduction of the y_weight parameter, the algorithm transitions from a purely geometric spatial average to a highly controllable, shape-preserving alignment tool.
+
+### Hard-DTW (DTW Barycenter Averaging aka DBA)
+Follows the underlying shape but introduces ultra-narrow boosted peaks and dips.These spikes are a known artifact of standard Hard-DTW Barycenter Averaging (DBA). Standard DTW uses a hard min() function to align sequences. When computing the average, the algorithm often maps multiple points from one sequence to a single, localized point in the reference sequence. When these mapped points are averaged together, it results in "pinching" or "spiky" artifacts—hence the ultra-narrow, artificial peaks and dips you are seeing.
+
+### Soft-DTW
+Follows the overall shape of the arithmetic mean while suppressing wiggles (extracts the "underlying shape"). Soft-DTW solves the "spiky" problem of Hard-DTW by replacing the hard min() operator with a continuous, differentiable log-sum-exp operator. This applies a smoothing parameter (usually denoted as $\gamma$). Instead of forcing a strict 1-to-1 or many-to-1 alignment, Soft-DTW distributes the alignment weights across a probability matrix. This effectively acts as a low-pass filter on the alignment warpings, beautifully suppressing the high-frequency wiggles and yielding a smooth, continuous underlying shape.
+
+## Exclude Outliers Function
+
+The "Exclude Outliers" feature identifies and removes measurements that deviate significantly from the group average. It calculates the mean magnitude across all loaded responses at each frequency and computes the standard deviation. Users can set a "Threshold" (in Standard Deviations); any curve whose total variance exceeds this threshold relative to the group is automatically excluded from the averaging calculation and highlighted in red in the file list. This state is maintained persistently throughout the session; however, the detection is automatically re-evaluated whenever the file list changes (e.g., adding or removing measurements) to ensure the standard deviation calculations remain accurate for the current dataset. This is particularly useful for filtering out measurement artifacts or "bad takes" that would otherwise skew the final average.
+
+## License
+
+This project is licensed under the MIT License. See LICENSE for details.
+
